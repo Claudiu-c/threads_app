@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { connectToDB } from "../mongoose";
+import { auth } from "@clerk/nextjs/server";
 
 import User from "../models/user.model";
 import Thread from "../models/thread.model";
@@ -66,7 +67,7 @@ export async function createThread({
 
     const communityIdObject = await Community.findOne(
       { id: communityId },
-      { _id: 1 }
+      { _id: 1 },
     );
 
     const createdThread = await Thread.create({
@@ -130,35 +131,44 @@ export async function deleteThread(id: string, path: string): Promise<void> {
       [
         ...descendantThreads.map((thread) => thread.author?._id?.toString()), // Use optional chaining to handle possible undefined values
         mainThread.author?._id?.toString(),
-      ].filter((id) => id !== undefined)
+      ].filter((id) => id !== undefined),
     );
 
     const uniqueCommunityIds = new Set(
       [
         ...descendantThreads.map((thread) => thread.community?._id?.toString()), // Use optional chaining to handle possible undefined values
         mainThread.community?._id?.toString(),
-      ].filter((id) => id !== undefined)
+      ].filter((id) => id !== undefined),
     );
 
     // Recursively delete child threads and their descendants
     await Thread.deleteMany({ _id: { $in: descendantThreadIds } });
 
+    if (mainThread.repostOf && mainThread.author?.id) {
+      await Thread.findByIdAndUpdate(mainThread.repostOf, {
+        $pull: { repostedBy: mainThread.author.id },
+      });
+      revalidatePath(`/thread/${mainThread.repostOf}`);
+    }
+
     // Update User model
     await User.updateMany(
       { _id: { $in: Array.from(uniqueAuthorIds) } },
-      { $pull: { threads: { $in: descendantThreadIds } } }
+      { $pull: { threads: { $in: descendantThreadIds } } },
     );
 
     // Update Community model
     await Community.updateMany(
       { _id: { $in: Array.from(uniqueCommunityIds) } },
-      { $pull: { threads: { $in: descendantThreadIds } } }
+      { $pull: { threads: { $in: descendantThreadIds } } },
     );
 
     revalidatePath(path);
   } catch (error: any) {
     throw new Error(`Failed to delete thread: ${error.message}`);
   }
+
+  revalidatePath("/");
 }
 
 export async function fetchThreadById(threadId: string) {
@@ -208,7 +218,7 @@ export async function addCommentToThread(
   threadId: string,
   commentText: string,
   userId: string,
-  path: string
+  path: string,
 ) {
   connectToDB();
 
@@ -241,4 +251,79 @@ export async function addCommentToThread(
     console.error("Error while adding comment:", err);
     throw new Error("Unable to add comment");
   }
+}
+
+export async function toggleThreadLike(threadId: string) {
+  const { userId } = auth();
+  if (!userId) throw new Error("You must be signed in");
+
+  await connectToDB();
+
+  const thread = await Thread.findById(threadId);
+  if (!thread) throw new Error("Thread not found");
+
+  const alreadyLiked = thread.likes?.includes(userId);
+
+  const updatedThread = await Thread.findByIdAndUpdate(
+    threadId,
+    alreadyLiked
+      ? { $pull: { likes: userId } }
+      : { $addToSet: { likes: userId } },
+    { new: true },
+  );
+
+  revalidatePath("/");
+  revalidatePath(`/thread/${threadId}`);
+
+  return {
+    liked: !alreadyLiked,
+    count: updatedThread.likes.length,
+  };
+}
+
+export async function repostThread(threadId: string) {
+  const { userId } = auth();
+  if (!userId) throw new Error("You must be signed in");
+
+  await connectToDB();
+
+  const user = await User.findOne({ id: userId });
+  if (!user) throw new Error("User not found");
+
+  const original = await Thread.findById(threadId).populate("author");
+  if (!original) throw new Error("Thread not found");
+  if (original.repostOf) {
+    throw new Error("A repost cannot be reposted again");
+  }
+
+  const existingRepost = await Thread.findOne({
+    repostOf: original._id,
+    author: user._id,
+  });
+
+  if (existingRepost) {
+    throw new Error("You already reposted this thread");
+  }
+  if (original.repostedBy?.includes(userId)) {
+    throw new Error("You already reposted this thread");
+  }
+
+  const repost = await Thread.create({
+    text: `Reposted from ${original.author.name}: ${original.text}`,
+    author: user._id,
+    repostOf: original._id,
+  });
+
+  await User.findByIdAndUpdate(user._id, {
+    $addToSet: { threads: repost._id },
+  });
+
+  await Thread.findByIdAndUpdate(threadId, {
+    $addToSet: { repostedBy: userId },
+  });
+
+  revalidatePath("/");
+  revalidatePath(`/thread/${threadId}`);
+
+  return { reposted: true };
 }

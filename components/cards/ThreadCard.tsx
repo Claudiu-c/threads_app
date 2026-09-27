@@ -3,6 +3,9 @@ import Link from "next/link";
 
 import { formatDateString } from "@/lib/utils";
 import DeleteThread from "../forms/DeleteThread";
+import LikeButton from "./LikeButton";
+import ShareButton from "./ShareButton";
+import RepostButton from "./RepostButton";
 
 interface Props {
   id: string;
@@ -26,6 +29,9 @@ interface Props {
     };
   }[];
   isComment?: boolean;
+  likes?: string[];
+  repostedBy?: string[];
+  repostOf?: string | null;
 }
 
 function ThreadCard({
@@ -38,6 +44,9 @@ function ThreadCard({
   createdAt,
   comments,
   isComment,
+  likes,
+  repostedBy,
+  repostOf,
 }: Props) {
   return (
     <article
@@ -71,12 +80,10 @@ function ThreadCard({
 
             <div className={`${isComment && "mb-10"} mt-5 flex flex-col gap-3`}>
               <div className="flex gap-3.5">
-                <Image
-                  src="/assets/heart-gray.svg"
-                  alt="heart"
-                  width={24}
-                  height={24}
-                  className="cursor-pointer object-contain"
+                <LikeButton
+                  threadId={id.toString()}
+                  currentUserId={currentUserId}
+                  initialLikes={likes ?? []}
                 />
                 <Link href={`/thread/${id}`}>
                   <Image
@@ -87,20 +94,14 @@ function ThreadCard({
                     className="cursor-pointer object-contain"
                   />
                 </Link>
-                <Image
-                  src="/assets/repost.svg"
-                  alt="heart"
-                  width={24}
-                  height={24}
-                  className="cursor-pointer object-contain"
-                />
-                <Image
-                  src="/assets/share.svg"
-                  alt="heart"
-                  width={24}
-                  height={24}
-                  className="cursor-pointer object-contain"
-                />
+                {!repostOf && (
+                  <RepostButton
+                    threadId={id.toString()}
+                    currentUserId={currentUserId}
+                    repostedBy={repostedBy ?? []}
+                  />
+                )}
+                <ShareButton threadId={id.toString()} />
               </div>
 
               {isComment && comments.length > 0 && (

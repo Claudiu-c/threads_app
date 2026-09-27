@@ -18,7 +18,7 @@ async function Home({
 
   const result = await fetchPosts(
     searchParams.page ? +searchParams.page : 1,
-    30
+    30,
   );
 
   return (
@@ -32,7 +32,7 @@ async function Home({
           <>
             {result.posts.map((post) => (
               <ThreadCard
-                key={post.id}
+                key={post._id.toString()}
                 id={post._id}
                 currentUserId={user?.id || ""}
                 parentId={post.parentId}
@@ -41,6 +41,9 @@ async function Home({
                 community={post.community}
                 createdAt={post.createdAt}
                 comments={post.children}
+                likes={post.likes ?? []}
+                repostedBy={post.repostedBy ?? []}
+                repostOf={post.repostOf?.toString() ?? null}
               />
             ))}
           </>

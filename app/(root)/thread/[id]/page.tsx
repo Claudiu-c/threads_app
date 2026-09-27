@@ -32,6 +32,9 @@ async function page({ params }: { params: { id: string } }) {
           community={thread.community}
           createdAt={thread.createdAt}
           comments={thread.children}
+          likes={thread.likes ?? []}
+          repostedBy={thread.repostedBy ?? []}
+          repostOf={thread.repostOf?.toString() ?? null}
         />
       </div>
 
@@ -56,6 +59,9 @@ async function page({ params }: { params: { id: string } }) {
             createdAt={childItem.createdAt}
             comments={childItem.children}
             isComment
+            likes={childItem.likes ?? []}
+            repostedBy={childItem.repostedBy ?? []}
+            repostOf={childItem.repostOf?.toString() ?? null}
           />
         ))}
       </div>

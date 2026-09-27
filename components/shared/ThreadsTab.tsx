@@ -27,6 +27,9 @@ interface Result {
         image: string;
       };
     }[];
+    likes?: string[];
+    repostedBy?: string[];
+    repostOf?: string | null;
   }[];
 }
 
@@ -72,6 +75,9 @@ const ThreadsTab = async ({ currentUserId, accountId, accountType }: Props) => {
           }
           createdAt={thread.createdAt}
           comments={thread.children}
+          likes={thread.likes ?? []}
+          repostedBy={thread.repostedBy ?? []}
+          repostOf={thread.repostOf ?? null}
         />
       ))}
     </section>
