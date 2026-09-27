@@ -19,8 +19,31 @@ const geistMono = localFont({
 });
 
 export const metadata = {
-  title: "Threads",
-  description: "A Next.js 13 Meta Threads Application",
+  metadataBase: new URL("https://threads-app-mu-eight.vercel.app"),
+  title: "Threads App",
+  description:
+    "A social app for sharing posts, joining conversations, and connecting with others.",
+  openGraph: {
+    title: "Threads App",
+    description: "Share posts, join conversations, and connect with others.",
+    url: "https://threads-app-mu-eight.vercel.app",
+    siteName: "Threads App",
+    images: [
+      {
+        url: "/assets/threads.png",
+        width: 1200,
+        height: 630,
+        alt: "Preview of the Threads App",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Threads App",
+    description: "Share posts, join conversations, and connect with others.",
+    images: ["/threads-preview.png"],
+  },
 };
 
 export default function RootLayout({

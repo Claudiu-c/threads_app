@@ -94,6 +94,7 @@ function ThreadCard({
                     className="cursor-pointer object-contain"
                   />
                 </Link>
+                <ShareButton threadId={id.toString()} />
                 {!repostOf && (
                   <RepostButton
                     threadId={id.toString()}
@@ -101,7 +102,6 @@ function ThreadCard({
                     repostedBy={repostedBy ?? []}
                   />
                 )}
-                <ShareButton threadId={id.toString()} />
               </div>
 
               {isComment && comments.length > 0 && (
