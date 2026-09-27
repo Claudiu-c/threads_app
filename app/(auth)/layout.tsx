@@ -17,7 +17,7 @@ export const metadata = {
   openGraph: {
     title: "Threads App",
     description: "Share posts, join conversations, and connect with others.",
-    url: "https://threads-app-mu-eight.vercel.app",
+    url: "https://threads-app-mu-eight.vercel.app/preview",
     siteName: "Threads App",
     images: [
       {
